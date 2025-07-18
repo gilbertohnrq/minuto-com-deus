@@ -1,0 +1,189 @@
+name: Build and Release to Firebase App Distribution
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version increment type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+      release_notes:
+        description: 'Release notes'
+        required: false
+        default: 'Automatic release from GitHub Actions'
+
+  # Automatic trigger on push to main (optional)
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '.gitignore'
+
+  # Automatic trigger on pull request merge (optional)
+  pull_request:
+    branches: [ main ]
+    types: [closed]
+
+env:
+  FLUTTER_VERSION: '3.24.0'
+
+jobs:
+  build-and-release:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.event.pull_request.merged == true) }}
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+        cache: true
+
+    - name: Setup Node.js for Firebase CLI
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install Firebase CLI
+      run: npm install -g firebase-tools
+
+    - name: Get Flutter dependencies
+      run: flutter pub get
+
+    - name: Run tests
+      run: flutter test
+
+    - name: Setup Git
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+    - name: Determine version type
+      id: version-type
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "type=${{ github.event.inputs.version_type }}" >> $GITHUB_OUTPUT
+        else
+          echo "type=patch" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Increment version
+      id: version
+      run: |
+        VERSION_TYPE="${{ steps.version-type.outputs.type }}"
+        CURRENT_VERSION=$(grep "version:" pubspec.yaml | sed 's/version: //' | tr -d ' ')
+        VERSION_NAME=$(echo $CURRENT_VERSION | cut -d'+' -f1)
+        BUILD_NUMBER=$(echo $CURRENT_VERSION | cut -d'+' -f2)
+        
+        # Split version name into major.minor.patch
+        IFS='.' read -ra VERSION_PARTS <<< "$VERSION_NAME"
+        MAJOR=${VERSION_PARTS[0]}
+        MINOR=${VERSION_PARTS[1]}
+        PATCH=${VERSION_PARTS[2]}
+        
+        # Increment based on type
+        case $VERSION_TYPE in
+          "major")
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            ;;
+          "minor")
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            ;;
+          "patch")
+            PATCH=$((PATCH + 1))
+            ;;
+        esac
+        
+        # Always increment build number
+        BUILD_NUMBER=$((BUILD_NUMBER + 1))
+        
+        NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}+${BUILD_NUMBER}"
+        
+        echo "Current version: $CURRENT_VERSION"
+        echo "New version: $NEW_VERSION"
+        
+        # Update pubspec.yaml
+        sed -i "s/version: $CURRENT_VERSION/version: $NEW_VERSION/" pubspec.yaml
+        
+        echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "version_name=${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_OUTPUT
+
+    - name: Build APK
+      run: flutter build apk --release
+
+    - name: Authenticate to Firebase
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+    - name: Distribute to Firebase App Distribution
+      run: |
+        RELEASE_NOTES="${{ github.event.inputs.release_notes || 'Automatic release from GitHub Actions' }}"
+        firebase appdistribution:distribute build/app/outputs/flutter-apk/app-release.apk \
+          --app 1:733461658307:android:7bcbec2e0928eb28884076 \
+          --groups "testers" \
+          --release-notes "$RELEASE_NOTES - Version: ${{ steps.version.outputs.version }}"
+
+    - name: Commit version bump
+      run: |
+        git add pubspec.yaml
+        git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
+        git tag "v${{ steps.version.outputs.version }}"
+
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: main
+        tags: true
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: "v${{ steps.version.outputs.version }}"
+        release_name: "Release v${{ steps.version.outputs.version }}"
+        body: |
+          ## Changes in this Release
+          ${{ github.event.inputs.release_notes || 'Automatic release from GitHub Actions' }}
+          
+          ### Version Details
+          - Version: ${{ steps.version.outputs.version }}
+          - Build: ${{ steps.version.outputs.version_name }}
+          
+          ### Download
+          The APK has been automatically distributed to testers via Firebase App Distribution.
+        draft: false
+        prerelease: false
+
+    - name: Upload APK as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-release-${{ steps.version.outputs.version }}
+        path: build/app/outputs/flutter-apk/app-release.apk
+        retention-days: 30

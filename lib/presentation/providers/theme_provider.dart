@@ -27,7 +27,7 @@ class ThemeNotifier extends StateNotifier<AppThemeMode> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final hasInitialized = prefs.getBool(_hasInitializedKey) ?? false;
-      
+
       if (!hasInitialized) {
         // First time app launch - use system theme as default
         state = AppThemeMode.system;
@@ -74,8 +74,11 @@ class ThemeNotifier extends StateNotifier<AppThemeMode> {
         break;
       case AppThemeMode.system:
         // If currently system, toggle to opposite of current system brightness
-        final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
-        newTheme = brightness == Brightness.dark ? AppThemeMode.light : AppThemeMode.dark;
+        final brightness =
+            WidgetsBinding.instance.platformDispatcher.platformBrightness;
+        newTheme = brightness == Brightness.dark
+            ? AppThemeMode.light
+            : AppThemeMode.dark;
         break;
     }
     await setTheme(newTheme);
@@ -136,7 +139,7 @@ final currentThemeModeProvider = Provider<ThemeMode>((ref) {
 /// Is dark mode provider (for UI components that need to know current brightness)
 final isDarkModeProvider = Provider<bool>((ref) {
   final themeMode = ref.watch(currentThemeModeProvider);
-  
+
   // For system theme, we can't determine without BuildContext
   // This will be handled in the widget level
   switch (themeMode) {
