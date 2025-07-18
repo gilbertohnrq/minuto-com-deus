@@ -1,15 +1,18 @@
 import 'dart:convert';
 import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/errors/exceptions.dart';
+import '../../data/datasources/local/devotional_local_datasource.dart';
+import '../../data/repositories/devotional_repository_impl.dart';
 import '../../domain/entities/devotional.dart';
 import '../../domain/repositories/devotional_repository.dart';
-import '../../data/repositories/devotional_repository_impl.dart';
-import '../../data/datasources/local/devotional_local_datasource.dart';
-import '../../core/errors/exceptions.dart';
 
 /// Provider for DevotionalLocalDataSource
-final devotionalLocalDataSourceProvider = Provider<DevotionalLocalDataSource>((ref) {
+final devotionalLocalDataSourceProvider =
+    Provider<DevotionalLocalDataSource>((ref) {
   return DevotionalLocalDataSourceImpl();
 });
 
@@ -23,40 +26,45 @@ final devotionalRepositoryProvider = Provider<DevotionalRepository>((ref) {
 final todayDevotionalProvider = FutureProvider<Devotional?>((ref) async {
   final repository = ref.watch(devotionalRepositoryProvider);
   final today = DateTime.now();
-  
+
   // Debug logging
   print('🐛 DEBUG: Current date: $today');
-  print('🐛 DEBUG: Today formatted for search: ${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}');
-  
+  print(
+      '🐛 DEBUG: Today formatted for search: ${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}');
+
   // Let's also debug what dates are available in the JSON
   try {
-    final String jsonString = await rootBundle.loadString('assets/data/devocionais.json');
+    final String jsonString =
+        await rootBundle.loadString('assets/data/devocionais.json');
     final List<dynamic> jsonList = json.decode(jsonString);
     print('🐛 DEBUG: Total devotionals in JSON: ${jsonList.length}');
-    
+
     // Show first few dates to see format
     for (int i = 0; i < math.min(5, jsonList.length); i++) {
       final item = jsonList[i] as Map<String, dynamic>;
       print('🐛 DEBUG: Sample date $i: ${item['data']}');
     }
-    
+
     // Check if today's date exists
-    final todayString = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    final todaysData = jsonList.where((item) => item['data'] == todayString).toList();
+    final todayString =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final todaysData =
+        jsonList.where((item) => item['data'] == todayString).toList();
     print('🐛 DEBUG: Found ${todaysData.length} entries for $todayString');
-    
+
     if (todaysData.isNotEmpty) {
       print('🐛 DEBUG: Today\'s devotional data: ${todaysData.first}');
     }
-    
+
     // Also check July dates
-    final julyData = jsonList.where((item) => item['data'].toString().startsWith('2025-07')).toList();
+    final julyData = jsonList
+        .where((item) => item['data'].toString().startsWith('2025-07'))
+        .toList();
     print('🐛 DEBUG: Found ${julyData.length} entries for July 2025');
-    
   } catch (jsonError) {
     print('🐛 DEBUG: Error reading JSON directly: $jsonError');
   }
-  
+
   try {
     final result = await repository.getDailyDevotional(today);
     print('🐛 DEBUG: Devotional found: ${result != null}');
@@ -75,9 +83,10 @@ final todayDevotionalProvider = FutureProvider<Devotional?>((ref) async {
 });
 
 /// Provider for devotional by specific date
-final devotionalByDateProvider = FutureProvider.family<Devotional?, DateTime>((ref, date) async {
+final devotionalByDateProvider =
+    FutureProvider.family<Devotional?, DateTime>((ref, date) async {
   final repository = ref.watch(devotionalRepositoryProvider);
-  
+
   try {
     return await repository.getDailyDevotional(date);
   } catch (e) {
@@ -90,7 +99,8 @@ final devotionalByDateProvider = FutureProvider.family<Devotional?, DateTime>((r
 });
 
 /// Provider for devotional history
-final devotionalHistoryProvider = FutureProvider.family<List<Devotional>, int>((ref, limit) async {
+final devotionalHistoryProvider =
+    FutureProvider.family<List<Devotional>, int>((ref, limit) async {
   final repository = ref.watch(devotionalRepositoryProvider);
   return await repository.getDevotionalHistory(limit);
 });
@@ -139,7 +149,7 @@ class DevotionalNotifier extends StateNotifier<DevotionalState> {
   /// Load today's devotional
   Future<void> loadTodayDevotional() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
-    
+
     try {
       final today = DateTime.now();
       final devotional = await _repository.getDailyDevotional(today);
@@ -154,7 +164,7 @@ class DevotionalNotifier extends StateNotifier<DevotionalState> {
       } else {
         errorMessage = 'Erro ao carregar devocional: ${e.toString()}';
       }
-      
+
       state = state.copyWith(
         isLoading: false,
         errorMessage: errorMessage,
@@ -166,7 +176,7 @@ class DevotionalNotifier extends StateNotifier<DevotionalState> {
   /// Load devotional for specific date
   Future<void> loadDevotionalByDate(DateTime date) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
-    
+
     try {
       final devotional = await _repository.getDailyDevotional(date);
       state = state.copyWith(
@@ -180,7 +190,7 @@ class DevotionalNotifier extends StateNotifier<DevotionalState> {
       } else {
         errorMessage = 'Erro ao carregar devocional: ${e.toString()}';
       }
-      
+
       state = state.copyWith(
         isLoading: false,
         errorMessage: errorMessage,
@@ -217,7 +227,8 @@ class DevotionalNotifier extends StateNotifier<DevotionalState> {
 }
 
 /// Provider for devotional state notifier
-final devotionalNotifierProvider = StateNotifierProvider<DevotionalNotifier, DevotionalState>((ref) {
+final devotionalNotifierProvider =
+    StateNotifierProvider<DevotionalNotifier, DevotionalState>((ref) {
   final repository = ref.watch(devotionalRepositoryProvider);
   return DevotionalNotifier(repository);
 });
