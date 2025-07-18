@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,6 +17,10 @@ class ThemeNotifier extends StateNotifier<AppThemeMode> {
 
   static const String _themeKey = 'theme_mode';
   static const String _hasInitializedKey = 'theme_initialized';
+  bool _isInitialized = false;
+
+  /// Check if the notifier has been initialized
+  bool get isInitialized => _isInitialized;
 
   /// Load theme from shared preferences or detect system default
   Future<void> _loadTheme() async {
@@ -26,10 +29,9 @@ class ThemeNotifier extends StateNotifier<AppThemeMode> {
       final hasInitialized = prefs.getBool(_hasInitializedKey) ?? false;
       
       if (!hasInitialized) {
-        // First time app launch - detect system theme
-        final systemTheme = await _detectSystemTheme();
-        state = systemTheme;
-        await _saveTheme(systemTheme);
+        // First time app launch - use system theme as default
+        state = AppThemeMode.system;
+        await _saveTheme(AppThemeMode.system);
         await prefs.setBool(_hasInitializedKey, true);
       } else {
         // Load saved theme preference
@@ -39,20 +41,8 @@ class ThemeNotifier extends StateNotifier<AppThemeMode> {
     } catch (e) {
       // Default to system theme if loading fails
       state = AppThemeMode.system;
-    }
-  }
-
-  /// Detect the system's current theme preference
-  Future<AppThemeMode> _detectSystemTheme() async {
-    try {
-      // Get the system brightness from the platform
-      final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
-      
-      // Return the corresponding theme based on system brightness
-      return brightness == Brightness.dark ? AppThemeMode.dark : AppThemeMode.light;
-    } catch (e) {
-      // Fallback to system theme if detection fails
-      return AppThemeMode.system;
+    } finally {
+      _isInitialized = true;
     }
   }
 
@@ -74,9 +64,20 @@ class ThemeNotifier extends StateNotifier<AppThemeMode> {
 
   /// Toggle between light and dark mode
   Future<void> toggleTheme() async {
-    final newTheme = state == AppThemeMode.light 
-        ? AppThemeMode.dark 
-        : AppThemeMode.light;
+    AppThemeMode newTheme;
+    switch (state) {
+      case AppThemeMode.light:
+        newTheme = AppThemeMode.dark;
+        break;
+      case AppThemeMode.dark:
+        newTheme = AppThemeMode.light;
+        break;
+      case AppThemeMode.system:
+        // If currently system, toggle to opposite of current system brightness
+        final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+        newTheme = brightness == Brightness.dark ? AppThemeMode.light : AppThemeMode.dark;
+        break;
+    }
     await setTheme(newTheme);
   }
 
@@ -124,8 +125,12 @@ final themeProvider = StateNotifierProvider<ThemeNotifier, AppThemeMode>((ref) {
 
 /// Current theme mode provider
 final currentThemeModeProvider = Provider<ThemeMode>((ref) {
-  final themeNotifier = ref.watch(themeProvider.notifier);
-  return themeNotifier.themeMode;
+  final currentTheme = ref.watch(themeProvider);
+  return switch (currentTheme) {
+    AppThemeMode.light => ThemeMode.light,
+    AppThemeMode.dark => ThemeMode.dark,
+    AppThemeMode.system => ThemeMode.system,
+  };
 });
 
 /// Is dark mode provider (for UI components that need to know current brightness)
@@ -146,6 +151,13 @@ final isDarkModeProvider = Provider<bool>((ref) {
 
 /// Theme display name provider
 final themeDisplayNameProvider = Provider<String>((ref) {
-  final themeNotifier = ref.watch(themeProvider.notifier);
-  return themeNotifier.displayName;
+  final currentTheme = ref.watch(themeProvider);
+  switch (currentTheme) {
+    case AppThemeMode.light:
+      return 'Claro';
+    case AppThemeMode.dark:
+      return 'Escuro';
+    case AppThemeMode.system:
+      return 'Sistema';
+  }
 });

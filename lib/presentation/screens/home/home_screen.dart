@@ -6,11 +6,13 @@ import '../../../services/app_launch_service.dart';
 import '../../providers/local_user_provider.dart';
 import '../../providers/devotional_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/reading_streak_provider.dart';
 import '../../widgets/common/banner_ad_widget.dart';
 import '../../widgets/common/error_widget.dart';
 import '../../widgets/common/loading_widget.dart';
 import '../../widgets/common/main_navigation.dart';
 import '../../widgets/devotional/devotional_card.dart';
+import '../../widgets/streak/streak_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -30,6 +32,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (shouldShowAds) {
         AppLaunchService.instance.showLaunchExperience(context);
       }
+      
+      // Initialize streak system
+      ref.read(readingStreakNotifierProvider.notifier).loadCurrentStreak();
+      ref.read(initializeReadingRemindersProvider);
     });
   }
 
@@ -146,6 +152,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
 
+              // Streak card
+              SliverToBoxAdapter(
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: isTablet ? 800 : double.infinity,
+                  ),
+                  margin: isTablet
+                      ? const EdgeInsets.symmetric(horizontal: 40)
+                      : EdgeInsets.zero,
+                  child: StreakCard(
+                    isCompact: false,
+                    onTap: () {
+                      // TODO: Navigate to streak details page
+                    },
+                  ),
+                ),
+              ),
+
               // Devotional content
               SliverFillRemaining(
                 hasScrollBody: false,
@@ -162,10 +186,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: todayDevotional.when(
                           data: (devotional) {
                             if (devotional != null) {
+                              // Mark as read when devotional is displayed
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                ref.read(readingStreakNotifierProvider.notifier).markAsRead();
+                              });
+                              
                               return DevotionalCard(
                                 devotional: devotional,
                                 onRefresh: () {
                                   ref.invalidate(todayDevotionalProvider);
+                                  ref.read(readingStreakNotifierProvider.notifier).refreshStreak();
                                 },
                               );
                             } else {

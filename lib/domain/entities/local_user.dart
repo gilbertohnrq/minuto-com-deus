@@ -1,4 +1,5 @@
 import 'notification_settings.dart';
+import 'reading_streak.dart';
 
 /// Local user entity for freemium model without authentication
 class LocalUser {
@@ -8,6 +9,7 @@ class LocalUser {
   final NotificationSettings notificationSettings;
   final DateTime createdAt;
   final DateTime? premiumExpirationDate;
+  final ReadingStreak readingStreak;
   
   const LocalUser({
     required this.id,
@@ -16,6 +18,7 @@ class LocalUser {
     required this.notificationSettings,
     required this.createdAt,
     this.premiumExpirationDate,
+    required this.readingStreak,
   });
   
   LocalUser copyWith({
@@ -25,6 +28,7 @@ class LocalUser {
     NotificationSettings? notificationSettings,
     DateTime? createdAt,
     DateTime? premiumExpirationDate,
+    ReadingStreak? readingStreak,
   }) {
     return LocalUser(
       id: id ?? this.id,
@@ -33,6 +37,7 @@ class LocalUser {
       notificationSettings: notificationSettings ?? this.notificationSettings,
       createdAt: createdAt ?? this.createdAt,
       premiumExpirationDate: premiumExpirationDate ?? this.premiumExpirationDate,
+      readingStreak: readingStreak ?? this.readingStreak,
     );
   }
 
@@ -52,7 +57,8 @@ class LocalUser {
         other.isPremium == isPremium &&
         other.notificationSettings == notificationSettings &&
         other.createdAt == createdAt &&
-        other.premiumExpirationDate == premiumExpirationDate;
+        other.premiumExpirationDate == premiumExpirationDate &&
+        other.readingStreak == readingStreak;
   }
   
   @override
@@ -64,12 +70,13 @@ class LocalUser {
       notificationSettings,
       createdAt,
       premiumExpirationDate,
+      readingStreak,
     );
   }
   
   @override
   String toString() {
-    return 'LocalUser(id: $id, name: $name, isPremium: $isPremium, isActivePremium: $isActivePremium)';
+    return 'LocalUser(id: $id, name: $name, isPremium: $isPremium, isActivePremium: $isActivePremium, streak: ${readingStreak.currentStreak})';
   }
 
   /// Convert to JSON for local storage
@@ -81,6 +88,7 @@ class LocalUser {
       'notificationSettings': notificationSettings.toMap(),
       'createdAt': createdAt.toIso8601String(),
       'premiumExpirationDate': premiumExpirationDate?.toIso8601String(),
+      'readingStreak': readingStreak.toJson(),
     };
   }
 
@@ -95,6 +103,9 @@ class LocalUser {
       premiumExpirationDate: json['premiumExpirationDate'] != null 
           ? DateTime.parse(json['premiumExpirationDate']) 
           : null,
+      readingStreak: json['readingStreak'] != null 
+          ? ReadingStreak.fromJson(json['readingStreak']) 
+          : ReadingStreak.empty(),
     );
   }
 }

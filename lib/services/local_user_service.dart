@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../domain/entities/local_user.dart';
 import '../domain/entities/notification_settings.dart';
+import '../domain/entities/reading_streak.dart';
 
 class LocalUserService {
   static const String _userKey = 'local_user';
@@ -25,6 +26,14 @@ class LocalUserService {
   
   /// Get the current local user
   LocalUser? get currentUser => _currentUser;
+  
+  /// Get the current local user (async version)
+  Future<LocalUser?> getUser() async {
+    if (_currentUser == null) {
+      await _loadOrCreateUser();
+    }
+    return _currentUser;
+  }
   
   /// Check if user has premium access
   bool get hasPremiumAccess => _currentUser?.isActivePremium ?? false;
@@ -60,6 +69,7 @@ class LocalUserService {
       isPremium: false,
       notificationSettings: NotificationSettings.defaultSettings(),
       createdAt: DateTime.now(),
+      readingStreak: ReadingStreak.empty(),
     );
     
     await _saveUser();
@@ -71,6 +81,12 @@ class LocalUserService {
       final userJson = jsonEncode(_currentUser!.toJson());
       await _prefs!.setString(_userKey, userJson);
     }
+  }
+  
+  /// Update user with new data
+  Future<void> updateUser(LocalUser user) async {
+    _currentUser = user;
+    await _saveUser();
   }
   
   /// Update user name
