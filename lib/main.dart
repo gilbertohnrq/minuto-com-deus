@@ -1,14 +1,14 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/data/latest.dart' as tz;
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 import 'app/app.dart';
 import 'firebase_options.dart';
 import 'services/ad_service.dart';
-import 'services/notification_service.dart';
 import 'services/local_user_service.dart';
+import 'services/notification_service.dart';
 import 'services/subscription_service.dart';
 
 void main() async {
@@ -16,7 +16,7 @@ void main() async {
 
   // Initialize timezone data
   tz.initializeTimeZones();
-  
+
   // Initialize locale data for internationalization
   await initializeDateFormatting('pt_BR', null);
   await initializeDateFormatting('en_US', null);

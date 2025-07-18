@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math' as math;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/devotional.dart';
 import '../../domain/repositories/devotional_repository.dart';
@@ -21,9 +24,48 @@ final todayDevotionalProvider = FutureProvider<Devotional?>((ref) async {
   final repository = ref.watch(devotionalRepositoryProvider);
   final today = DateTime.now();
   
+  // Debug logging
+  print('🐛 DEBUG: Current date: $today');
+  print('🐛 DEBUG: Today formatted for search: ${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}');
+  
+  // Let's also debug what dates are available in the JSON
   try {
-    return await repository.getDailyDevotional(today);
+    final String jsonString = await rootBundle.loadString('assets/data/devocionais.json');
+    final List<dynamic> jsonList = json.decode(jsonString);
+    print('🐛 DEBUG: Total devotionals in JSON: ${jsonList.length}');
+    
+    // Show first few dates to see format
+    for (int i = 0; i < math.min(5, jsonList.length); i++) {
+      final item = jsonList[i] as Map<String, dynamic>;
+      print('🐛 DEBUG: Sample date $i: ${item['data']}');
+    }
+    
+    // Check if today's date exists
+    final todayString = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final todaysData = jsonList.where((item) => item['data'] == todayString).toList();
+    print('🐛 DEBUG: Found ${todaysData.length} entries for $todayString');
+    
+    if (todaysData.isNotEmpty) {
+      print('🐛 DEBUG: Today\'s devotional data: ${todaysData.first}');
+    }
+    
+    // Also check July dates
+    final julyData = jsonList.where((item) => item['data'].toString().startsWith('2025-07')).toList();
+    print('🐛 DEBUG: Found ${julyData.length} entries for July 2025');
+    
+  } catch (jsonError) {
+    print('🐛 DEBUG: Error reading JSON directly: $jsonError');
+  }
+  
+  try {
+    final result = await repository.getDailyDevotional(today);
+    print('🐛 DEBUG: Devotional found: ${result != null}');
+    if (result != null) {
+      print('🐛 DEBUG: Devotional verse: ${result.verse}');
+    }
+    return result;
   } catch (e) {
+    print('🐛 DEBUG: Error loading devotional: $e');
     if (e is DevotionalNotFoundException) {
       // Return null for missing devotionals instead of throwing
       return null;
