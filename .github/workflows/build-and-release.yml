@@ -28,13 +28,13 @@ jobs:
 
       - name: Build and release Android
         run: |
-          cd android
+          cd android/fastlane
           bundle install
           bundle exec fastlane distribute
 
       - name: Build and release iOS
         run: |
-          cd ios
+          cd ios/fastlane
           bundle install
           bundle exec fastlane distribute
 
