@@ -15,14 +15,14 @@ class AdService {
   bool _isBannerAdLoaded = false;
   bool _isInterstitialAdLoaded = false;
 
-  // Ad unit IDs from environment variables
+  // Test IDs while waiting for AdMob account approval
   static String get _bannerAdUnitId => Platform.isAndroid
-      ? dotenv.env['ADMOB_BANNER_ANDROID'] ?? 'ca-app-pub-3940256099942544/6300978111'
-      : dotenv.env['ADMOB_BANNER_IOS'] ?? 'ca-app-pub-3940256099942544/2934735716';
+      ? 'ca-app-pub-3940256099942544/6300978111' // Test banner Android
+      : 'ca-app-pub-3940256099942544/2934735716'; // Test banner iOS
 
   static String get _interstitialAdUnitId => Platform.isAndroid
-      ? dotenv.env['ADMOB_INTERSTITIAL_ANDROID'] ?? 'ca-app-pub-3940256099942544/1033173712'
-      : dotenv.env['ADMOB_INTERSTITIAL_IOS'] ?? 'ca-app-pub-3940256099942544/4411468910';
+      ? 'ca-app-pub-3940256099942544/1033173712' // Test interstitial Android
+      : 'ca-app-pub-3940256099942544/4411468910'; // Test interstitial iOS
 
   /// Initialize the Mobile Ads SDK
   Future<void> initialize() async {

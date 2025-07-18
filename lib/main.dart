@@ -16,7 +16,14 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
+    print('✅ Environment variables loaded successfully');
+    print('🎯 ADMOB_BANNER_ANDROID: ${dotenv.env['ADMOB_BANNER_ANDROID']}');
+  } catch (e) {
+    print('⚠️ Failed to load .env file: $e');
+    print('🎯 Using fallback test IDs');
+  }
 
   // Initialize timezone data
   tz.initializeTimeZones();
