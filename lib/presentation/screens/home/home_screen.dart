@@ -2,19 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/date_utils.dart' as app_date_utils;
+import '../../../services/app_launch_service.dart';
 import '../../providers/local_user_provider.dart';
 import '../../providers/devotional_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common/banner_ad_widget.dart';
 import '../../widgets/common/error_widget.dart';
 import '../../widgets/common/loading_widget.dart';
 import '../../widgets/common/main_navigation.dart';
 import '../../widgets/devotional/devotional_card.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    
+    // Show launch experience (interstitial ad + premium popup)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final shouldShowAds = ref.read(shouldShowAdsProvider);
+      if (shouldShowAds) {
+        AppLaunchService.instance.showLaunchExperience(context);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final todayDevotional = ref.watch(todayDevotionalProvider);
     final currentUser = ref.watch(currentLocalUserProvider);
     final shouldShowAds = ref.watch(shouldShowAdsProvider);
@@ -30,6 +50,18 @@ class HomeScreen extends ConsumerWidget {
           backgroundColor: theme.colorScheme.inversePrimary,
           elevation: 0,
           actions: [
+            // Theme toggle button
+            IconButton(
+              onPressed: () {
+                ref.read(themeProvider.notifier).toggleTheme();
+              },
+              icon: Icon(
+                Theme.of(context).brightness == Brightness.dark
+                    ? Icons.light_mode
+                    : Icons.dark_mode,
+              ),
+              tooltip: 'Alterar tema',
+            ),
             // Premium button for non-premium users
             if (shouldShowAds) ...[
               IconButton(

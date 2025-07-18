@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AdService {
   static AdService? _instance;
@@ -13,22 +15,14 @@ class AdService {
   bool _isBannerAdLoaded = false;
   bool _isInterstitialAdLoaded = false;
 
-  // Test ad unit IDs - replace with real ones in production
-  static String get _bannerAdUnitId => kDebugMode
-      ? (Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/6300978111' // Test banner ID
-          : 'ca-app-pub-3940256099942544/2934735716') // Test banner ID iOS
-      : (Platform.isAndroid
-          ? 'YOUR_ANDROID_BANNER_AD_UNIT_ID'
-          : 'YOUR_IOS_BANNER_AD_UNIT_ID');
+  // Ad unit IDs from environment variables
+  static String get _bannerAdUnitId => Platform.isAndroid
+      ? dotenv.env['ADMOB_BANNER_ANDROID'] ?? 'ca-app-pub-3940256099942544/6300978111'
+      : dotenv.env['ADMOB_BANNER_IOS'] ?? 'ca-app-pub-3940256099942544/2934735716';
 
-  static String get _interstitialAdUnitId => kDebugMode
-      ? (Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/1033173712' // Test interstitial ID
-          : 'ca-app-pub-3940256099942544/4411468910') // Test interstitial ID iOS
-      : (Platform.isAndroid
-          ? 'YOUR_ANDROID_INTERSTITIAL_AD_UNIT_ID'
-          : 'YOUR_IOS_INTERSTITIAL_AD_UNIT_ID');
+  static String get _interstitialAdUnitId => Platform.isAndroid
+      ? dotenv.env['ADMOB_INTERSTITIAL_ANDROID'] ?? 'ca-app-pub-3940256099942544/1033173712'
+      : dotenv.env['ADMOB_INTERSTITIAL_IOS'] ?? 'ca-app-pub-3940256099942544/4411468910';
 
   /// Initialize the Mobile Ads SDK
   Future<void> initialize() async {
@@ -47,6 +41,8 @@ class AdService {
   /// Load banner ad
   Future<void> loadBannerAd() async {
     try {
+      final completer = Completer<void>();
+      
       _bannerAd = BannerAd(
         adUnitId: _bannerAdUnitId,
         size: AdSize.banner,
@@ -57,6 +53,7 @@ class AdService {
             if (kDebugMode) {
               print('AdService: Banner ad loaded successfully');
             }
+            completer.complete();
           },
           onAdFailedToLoad: (ad, error) {
             _isBannerAdLoaded = false;
@@ -65,6 +62,7 @@ class AdService {
             if (kDebugMode) {
               print('AdService: Banner ad failed to load: $error');
             }
+            completer.completeError(error);
           },
           onAdOpened: (ad) {
             if (kDebugMode) {
@@ -80,17 +78,21 @@ class AdService {
       );
 
       await _bannerAd!.load();
+      await completer.future;
     } catch (e) {
       _isBannerAdLoaded = false;
       if (kDebugMode) {
         print('AdService: Error loading banner ad: $e');
       }
+      rethrow;
     }
   }
 
   /// Load interstitial ad
   Future<void> loadInterstitialAd() async {
     try {
+      final completer = Completer<void>();
+      
       await InterstitialAd.load(
         adUnitId: _interstitialAdUnitId,
         request: const AdRequest(),
@@ -129,20 +131,25 @@ class AdService {
                 }
               },
             );
+            completer.complete();
           },
           onAdFailedToLoad: (error) {
             _isInterstitialAdLoaded = false;
             if (kDebugMode) {
               print('AdService: Interstitial ad failed to load: $error');
             }
+            completer.completeError(error);
           },
         ),
       );
+      
+      await completer.future;
     } catch (e) {
       _isInterstitialAdLoaded = false;
       if (kDebugMode) {
         print('AdService: Error loading interstitial ad: $e');
       }
+      rethrow;
     }
   }
 

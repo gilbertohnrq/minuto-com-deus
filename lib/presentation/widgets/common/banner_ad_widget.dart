@@ -39,10 +39,13 @@ class _BannerAdWidgetState extends ConsumerState<BannerAdWidget> {
       return const SizedBox.shrink();
     }
 
+    final width = adService.bannerAd!.size.width.toDouble();
+    final height = adService.bannerAd!.size.height.toDouble();
+
     return Container(
       alignment: Alignment.center,
-      width: adService.bannerAd!.size.width.toDouble(),
-      height: adService.bannerAd!.size.height.toDouble(),
+      width: width,
+      height: height,
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       decoration: BoxDecoration(
         border: Border.all(

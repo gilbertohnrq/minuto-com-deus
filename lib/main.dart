@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
@@ -13,6 +14,9 @@ import 'services/subscription_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
 
   // Initialize timezone data
   tz.initializeTimeZones();
@@ -47,6 +51,14 @@ void main() async {
   // Initialize ad service
   final adService = AdService.instance;
   await adService.initialize();
+  
+  // Load interstitial ad for app launch
+  try {
+    await adService.loadInterstitialAd();
+    print('✅ Interstitial ad loaded for app launch');
+  } catch (e) {
+    print('⚠️ Failed to load interstitial ad: $e');
+  }
 
   // Note: Skipping AuthService initialization for freemium model
   // Firebase Auth will be used only when real authentication is needed

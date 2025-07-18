@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/local_user_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/common/main_navigation.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 
@@ -39,6 +40,11 @@ class SettingsScreen extends ConsumerWidget {
               
               // Notification Settings Section
               _buildNotificationSection(context, currentUser, theme, isTablet),
+              
+              const SizedBox(height: 24),
+              
+              // Theme Settings Section
+              _buildThemeSection(context, ref, theme, isTablet),
               
               const SizedBox(height: 24),
               
@@ -229,6 +235,121 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildThemeSection(BuildContext context, WidgetRef ref, ThemeData theme, bool isTablet) {
+    final currentTheme = ref.watch(themeProvider);
+    final themeNotifier = ref.read(themeProvider.notifier);
+    
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 20.0 : 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.palette,
+                  color: theme.colorScheme.primary,
+                  size: isTablet ? 28 : 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Aparência',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: isTablet ? 20 : null,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            
+            // Theme detection info
+            Container(
+              padding: EdgeInsets.all(isTablet ? 16.0 : 12.0),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome,
+                    size: isTablet ? 20 : 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'O tema foi detectado automaticamente baseado nas configurações do seu dispositivo',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                        fontSize: isTablet ? 14 : 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Theme mode selection
+            Column(
+              children: AppThemeMode.values.map((mode) {
+                return RadioListTile<AppThemeMode>(
+                  title: Text(
+                    _getThemeModeTitle(mode),
+                    style: TextStyle(
+                      fontSize: isTablet ? 16 : null,
+                    ),
+                  ),
+                  subtitle: Text(
+                    _getThemeModeSubtitle(mode),
+                    style: TextStyle(
+                      fontSize: isTablet ? 14 : null,
+                    ),
+                  ),
+                  value: mode,
+                  groupValue: currentTheme,
+                  onChanged: (AppThemeMode? value) {
+                    if (value != null) {
+                      themeNotifier.setTheme(value);
+                    }
+                  },
+                  contentPadding: EdgeInsets.zero,
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  String _getThemeModeTitle(AppThemeMode mode) {
+    switch (mode) {
+      case AppThemeMode.light:
+        return 'Claro';
+      case AppThemeMode.dark:
+        return 'Escuro';
+      case AppThemeMode.system:
+        return 'Sistema';
+    }
+  }
+  
+  String _getThemeModeSubtitle(AppThemeMode mode) {
+    switch (mode) {
+      case AppThemeMode.light:
+        return 'Sempre use tema claro';
+      case AppThemeMode.dark:
+        return 'Sempre use tema escuro';
+      case AppThemeMode.system:
+        return 'Seguir configuração do sistema';
+    }
   }
 
   Widget _buildPremiumSection(BuildContext context, user, ThemeData theme, bool isTablet) {
