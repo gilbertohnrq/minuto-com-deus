@@ -4,7 +4,8 @@ platform :android do
   desc "Increment version code"
   lane :bump do
     gradle(
-      task: "incrementVersionCode"
+      task: "incrementVersionCode",
+      gradlew_path: "../../gradlew"
     )
   end
 
