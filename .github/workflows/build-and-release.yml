@@ -23,16 +23,6 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      - name: Authenticate with Firebase
-        run: firebase login:ci --no-localhost
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-
-      - name: Fetch Firebase config files
-        run: |
-          firebase apps:sdkconfig -p android --out android/app/google-services.json
-          firebase apps:sdkconfig -p ios --out ios/Runner/GoogleService-Info.plist
-
       - name: Increment version
         run: ruby scripts/increment_patch_version.rb
 

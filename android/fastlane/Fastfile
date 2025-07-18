@@ -17,7 +17,8 @@ platform :android do
     firebase_app_distribution(
       app: "1:629899183939:android:b121b5f2c5f3e3f3e3f3e3",
       testers: "test@example.com",
-      firebase_cli_path: "/usr/local/bin/firebase"
+      firebase_cli_path: "/usr/local/bin/firebase",
+      firebase_token: ENV["FIREBASE_TOKEN"]
     )
   end
 end
