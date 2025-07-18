@@ -22,6 +22,17 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
+    // Build optimization
+    buildFeatures {
+        buildConfig = true
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.devotional.daily_devotional_app"
@@ -38,6 +49,16 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            
+            // Optimize build speed and size
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        debug {
+            // Disable optimizations for faster debug builds
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
