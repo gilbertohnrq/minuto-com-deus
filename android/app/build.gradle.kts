@@ -72,3 +72,17 @@ dependencies {
     
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
+
+tasks.register("incrementVersionCode") {
+    doLast {
+        val buildFile = file("build.gradle.kts")
+        var content = buildFile.readText()
+        val regex = "versionCode = (\\d+)".toRegex()
+        val match = regex.find(content)
+        if (match != null) {
+            val newVersionCode = match.groupValues[1].toInt() + 1
+            content = content.replaceFirst(regex, "versionCode = " + newVersionCode)
+            buildFile.writeText(content)
+        }
+    }
+}

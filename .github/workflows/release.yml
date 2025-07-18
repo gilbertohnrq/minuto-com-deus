@@ -1,0 +1,46 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Authenticate with Firebase
+        run: firebase login:ci --no-localhost
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+      - name: Fetch Firebase config files
+        run: |
+          firebase apps:sdkconfig -p android --out android/app/google-services.json
+          firebase apps:sdkconfig -p ios --out ios/Runner/GoogleService-Info.plist
+
+      - name: Build and release Android
+        run: |
+          cd android
+          bundle install
+          bundle exec fastlane distribute
+
+      - name: Build and release iOS
+        run: |
+          cd ios
+          bundle install
+          bundle exec fastlane distribute
