@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'app/app.dart';
 import 'firebase_options.dart';
@@ -15,11 +16,21 @@ void main() async {
 
   // Initialize timezone data
   tz.initializeTimeZones();
+  
+  // Initialize locale data for internationalization
+  await initializeDateFormatting('pt_BR', null);
+  await initializeDateFormatting('en_US', null);
 
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Try to initialize Firebase (gracefully handle errors for demo mode)
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('✅ Firebase initialized successfully');
+  } catch (e) {
+    print('⚠️ Firebase initialization failed (demo mode): $e');
+    // Continue without Firebase for local/demo mode
+  }
 
   // Initialize notification service
   final notificationService = NotificationService();
@@ -36,6 +47,9 @@ void main() async {
   // Initialize ad service
   final adService = AdService.instance;
   await adService.initialize();
+
+  // Note: Skipping AuthService initialization for freemium model
+  // Firebase Auth will be used only when real authentication is needed
 
   runApp(
     const ProviderScope(
