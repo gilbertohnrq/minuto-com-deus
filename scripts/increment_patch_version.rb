@@ -1,6 +1,6 @@
 require 'yaml'
 
-pubspec_path = '../../pubspec.yaml'
+pubspec_path = 'pubspec.yaml'
 data = YAML.load_file(pubspec_path)
 version = data['version'].split('+')
 version_parts = version[0].split('.')
