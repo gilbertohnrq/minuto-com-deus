@@ -50,10 +50,9 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
             
-            // Optimize build speed and size
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Simplified build for now - disable optimizations that might cause hanging
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
         debug {
             // Disable optimizations for faster debug builds
@@ -68,5 +67,8 @@ flutter {
 }
 
 dependencies {
+    // Firebase BoM for consistent versions
+    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+    
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
