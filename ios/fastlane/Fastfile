@@ -10,9 +10,6 @@ platform :ios do
 
   desc "Build and distribute to Firebase App Distribution"
   lane :distribute do
-    Dir.chdir("../..") do
-      sh("ruby scripts/increment_patch_version.rb")
-    end
     bump
     build_app(
       workspace: "Runner.xcworkspace",
