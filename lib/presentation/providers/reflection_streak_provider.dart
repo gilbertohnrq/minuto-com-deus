@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/reading_streak.dart';
 import '../../services/reflection_service.dart';
 import '../../services/reading_streak_service.dart';
 import '../../services/ad_service.dart';
 import 'auth_provider.dart';
 import 'reflection_provider.dart';
-import 'reading_streak_provider.dart';
+import 'reading_streak_provider.dart' show hasReflectedTodayProvider, readingStreakServiceProvider, currentReadingStreakProvider, streakStatsProvider;
 import 'ad_provider.dart';
 
 /// Combined state for reflection submission and streak updates

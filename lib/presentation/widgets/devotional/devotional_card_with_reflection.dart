@@ -6,7 +6,7 @@ import '../../../domain/entities/devotional.dart';
 import '../../../domain/entities/reflection.dart';
 import '../../providers/reflection_streak_provider.dart';
 import '../common/custom_text_field.dart';
-import '../common/loading_widget.dart';
+
 import 'streak_animation_widget.dart';
 
 class DevotionalCardWithReflection extends ConsumerStatefulWidget {
@@ -440,7 +440,7 @@ class _DevotionalCardWithReflectionState
         CustomTextField(
           controller: _reflectionController,
           focusNode: _reflectionFocusNode,
-          hintText: 'Compartilhe seus pensamentos sobre esta reflexão...',
+          hint: 'Compartilhe seus pensamentos sobre esta reflexão...',
           maxLines: 4,
           maxLength: 1000,
           enabled: !reflectionState.isSubmitting,

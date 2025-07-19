@@ -107,7 +107,6 @@ class _StreakAnimationWidgetState extends ConsumerState<StreakAnimationWidget>
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final screenSize = MediaQuery.of(context).size;
 
     return Positioned.fill(
       child: Container(

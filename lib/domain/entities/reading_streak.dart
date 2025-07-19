@@ -39,6 +39,43 @@ class ReadingStreak {
     return lastDate.isAtSameMomentAs(today);
   }
 
+  int get totalDaysRead => reflectionDates.length;
+
+  /// Create an empty ReadingStreak
+  static ReadingStreak empty() {
+    return ReadingStreak(
+      userId: '',
+      currentStreak: 0,
+      longestStreak: 0,
+      lastReflectionDate: DateTime.now(),
+      reflectionDates: [],
+    );
+  }
+
+  /// Convert to JSON for local storage
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'currentStreak': currentStreak,
+      'longestStreak': longestStreak,
+      'lastReflectionDate': lastReflectionDate.toIso8601String(),
+      'reflectionDates': reflectionDates.map((date) => date.toIso8601String()).toList(),
+    };
+  }
+
+  /// Create from JSON for local storage
+  static ReadingStreak fromJson(Map<String, dynamic> json) {
+    return ReadingStreak(
+      userId: json['userId'] ?? '',
+      currentStreak: json['currentStreak'] ?? 0,
+      longestStreak: json['longestStreak'] ?? 0,
+      lastReflectionDate: DateTime.parse(json['lastReflectionDate'] ?? DateTime.now().toIso8601String()),
+      reflectionDates: (json['reflectionDates'] as List<dynamic>?)
+          ?.map((dateStr) => DateTime.parse(dateStr))
+          .toList() ?? [],
+    );
+  }
+
   ReadingStreak copyWith({
     String? userId,
     int? currentStreak,

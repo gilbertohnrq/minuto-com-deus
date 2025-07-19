@@ -17,6 +17,9 @@ class User {
     required this.createdAt,
   });
   
+  /// Alias for id to maintain compatibility with Firebase Auth
+  String get uid => id;
+  
   User copyWith({
     String? id,
     String? email,

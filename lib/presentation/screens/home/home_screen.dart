@@ -8,7 +8,7 @@ import '../../providers/devotional_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/reading_streak_provider.dart';
 import '../../providers/reflection_provider.dart';
-import '../../widgets/common/banner_ad_widget.dart';
+
 import '../../widgets/common/error_widget.dart';
 import '../../widgets/common/loading_widget.dart';
 import '../../widgets/common/main_navigation.dart';

@@ -53,20 +53,7 @@ final userReflectionsProvider = FutureProvider<List<Reflection>>((ref) async {
   );
 });
 
-// Check if user has reflected today
-final hasReflectedTodayProvider = FutureProvider<bool>((ref) async {
-  final reflectionService = ref.watch(reflectionServiceProvider);
-  final authState = ref.watch(authStateProvider);
-  
-  return authState.when(
-    data: (user) async {
-      if (user == null) return false;
-      return await reflectionService.hasReflectedToday(user.uid);
-    },
-    loading: () => false,
-    error: (_, __) => false,
-  );
-});
+// Note: hasReflectedTodayProvider is defined in reading_streak_provider.dart
 
 // Reflection submission state notifier
 class ReflectionSubmissionNotifier extends StateNotifier<AsyncValue<void>> {
@@ -94,7 +81,6 @@ class ReflectionSubmissionNotifier extends StateNotifier<AsyncValue<void>> {
           // Invalidate related providers to refresh UI
           _ref.invalidate(todayReflectionProvider(devotionalId));
           _ref.invalidate(userReflectionsProvider);
-          _ref.invalidate(hasReflectedTodayProvider);
         } catch (error, stackTrace) {
           state = AsyncValue.error(error, stackTrace);
         }
