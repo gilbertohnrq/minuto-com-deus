@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../utils/env_helper.dart';
 
 class AdService {
   static AdService? _instance;
@@ -15,14 +15,14 @@ class AdService {
   bool _isBannerAdLoaded = false;
   bool _isInterstitialAdLoaded = false;
 
-  // Test IDs while waiting for AdMob account approval
+  // Ad unit IDs from environment variables (fallback to test IDs for development)
   static String get _bannerAdUnitId => Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/6300978111' // Test banner Android
-      : 'ca-app-pub-3940256099942544/2934735716'; // Test banner iOS
+      ? EnvHelper.getEnvOrDefault('ADMOB_BANNER_ANDROID', 'ca-app-pub-3940256099942544/6300978111')
+      : EnvHelper.getEnvOrDefault('ADMOB_BANNER_IOS', 'ca-app-pub-3940256099942544/2934735716');
 
   static String get _interstitialAdUnitId => Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/1033173712' // Test interstitial Android
-      : 'ca-app-pub-3940256099942544/4411468910'; // Test interstitial iOS
+      ? EnvHelper.getEnvOrDefault('ADMOB_INTERSTITIAL_ANDR', 'ca-app-pub-3940256099942544/1033173712')
+      : EnvHelper.getEnvOrDefault('ADMOB_INTERSTITIAL_IOS', 'ca-app-pub-3940256099942544/4411468910');
 
   /// Initialize the Mobile Ads SDK
   Future<void> initialize() async {

@@ -1,12 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 import 'app/app.dart';
-import 'firebase_options.dart';
 import 'services/ad_service.dart';
 import 'services/local_user_service.dart';
 import 'services/notification_service.dart';
@@ -20,7 +19,7 @@ void main() async {
     await dotenv.load(fileName: ".env");
     print('✅ Environment variables loaded successfully');
   } catch (e) {
-    print('⚠️ No .env file found, using defaults');
+    print('⚠️ No .env file found, using system environment or defaults');
   }
 
   // Initialize timezone data
@@ -32,9 +31,7 @@ void main() async {
 
   // Try to initialize Firebase (skip if config missing in CI)
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    await Firebase.initializeApp();
     print('✅ Firebase initialized successfully');
   } catch (e) {
     print('⚠️ Firebase initialization skipped: $e');
@@ -56,7 +53,7 @@ void main() async {
   // Initialize ad service
   final adService = AdService.instance;
   await adService.initialize();
-  
+
   // Load interstitial ad for app launch
   try {
     await adService.loadInterstitialAd();
