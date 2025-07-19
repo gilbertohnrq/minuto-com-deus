@@ -4,7 +4,7 @@ platform :ios do
   desc "Increment build number"
   lane :bump do
     increment_build_number(
-      xcodeproj: "Runner.xcodeproj"
+      xcodeproj: File.expand_path("../Runner.xcodeproj", Dir.pwd)
     )
   end
 
@@ -12,7 +12,7 @@ platform :ios do
   lane :distribute do
     bump
     build_app(
-      workspace: "Runner.xcworkspace",
+      workspace: File.expand_path("../Runner.xcworkspace", Dir.pwd),
       scheme: "Runner"
     )
     firebase_app_distribution(

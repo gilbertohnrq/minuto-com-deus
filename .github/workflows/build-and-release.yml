@@ -26,6 +26,9 @@ jobs:
       - name: Increment version
         run: ruby scripts/increment_patch_version.rb
 
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
       - name: Build and release Android
         run: |
           cd android/fastlane

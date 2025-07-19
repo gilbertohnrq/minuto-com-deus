@@ -5,7 +5,7 @@ platform :android do
   lane :bump do
     gradle(
       task: "incrementVersionCode",
-      project_dir: "../"
+      project_dir: File.expand_path("..", Dir.pwd)
     )
   end
 
@@ -13,7 +13,8 @@ platform :android do
   lane :distribute do
     bump
     gradle(
-      task: "app:assembleRelease"
+      task: "app:assembleRelease",
+      project_dir: File.expand_path("..", Dir.pwd)
     )
     firebase_app_distribution(
       app: "1:629899183939:android:b121b5f2c5f3e3f3e3f3e3",
