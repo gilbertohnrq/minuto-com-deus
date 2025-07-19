@@ -15,14 +15,12 @@ import 'services/subscription_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
+  // Load environment variables (optional for CI builds)
   try {
     await dotenv.load(fileName: ".env");
     print('✅ Environment variables loaded successfully');
-    print('🎯 ADMOB_BANNER_ANDROID: ${dotenv.env['ADMOB_BANNER_ANDROID']}');
   } catch (e) {
-    print('⚠️ Failed to load .env file: $e');
-    print('🎯 Using fallback test IDs');
+    print('⚠️ No .env file found, using defaults');
   }
 
   // Initialize timezone data
@@ -32,15 +30,15 @@ void main() async {
   await initializeDateFormatting('pt_BR', null);
   await initializeDateFormatting('en_US', null);
 
-  // Try to initialize Firebase (gracefully handle errors for demo mode)
+  // Try to initialize Firebase (skip if config missing in CI)
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     print('✅ Firebase initialized successfully');
   } catch (e) {
-    print('⚠️ Firebase initialization failed (demo mode): $e');
-    // Continue without Firebase for local/demo mode
+    print('⚠️ Firebase initialization skipped: $e');
+    // Continue without Firebase for CI builds
   }
 
   // Initialize notification service
