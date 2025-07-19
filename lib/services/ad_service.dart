@@ -21,7 +21,7 @@ class AdService {
       : EnvHelper.getEnvOrDefault('ADMOB_BANNER_IOS', 'ca-app-pub-3940256099942544/2934735716');
 
   static String get _interstitialAdUnitId => Platform.isAndroid
-      ? EnvHelper.getEnvOrDefault('ADMOB_INTERSTITIAL_ANDR', 'ca-app-pub-3940256099942544/1033173712')
+      ? EnvHelper.getEnvOrDefault('ADMOB_INTERSTITIAL_ANDROID', 'ca-app-pub-3940256099942544/1033173712')
       : EnvHelper.getEnvOrDefault('ADMOB_INTERSTITIAL_IOS', 'ca-app-pub-3940256099942544/4411468910');
 
   /// Initialize the Mobile Ads SDK
