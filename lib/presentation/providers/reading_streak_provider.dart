@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/datasources/local/reading_streak_local_datasource.dart';
+import '../../data/repositories/reading_streak_repository_impl.dart';
 import '../../domain/entities/reading_streak.dart';
+import '../../domain/repositories/reading_streak_repository.dart';
 import '../../services/reading_streak_service.dart';
 import '../../services/local_user_service.dart';
 import '../../services/notification_service.dart';
+import 'auth_provider.dart';
 
 /// Provider for LocalUserService
 final localUserServiceProvider = Provider<LocalUserService>((ref) {
@@ -15,29 +19,88 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
 });
 
+/// Provider for ReadingStreakLocalDataSource
+final readingStreakLocalDataSourceProvider = Provider<ReadingStreakLocalDataSource>((ref) {
+  return ReadingStreakLocalDataSourceImpl();
+});
+
+/// Provider for ReadingStreakRepository
+final readingStreakRepositoryProvider = Provider<ReadingStreakRepository>((ref) {
+  final localDataSource = ref.watch(readingStreakLocalDataSourceProvider);
+  return ReadingStreakRepositoryImpl(localDataSource: localDataSource);
+});
+
 /// Provider for ReadingStreakService
 final readingStreakServiceProvider = Provider<ReadingStreakService>((ref) {
+  final streakRepository = ref.watch(readingStreakRepositoryProvider);
   final localUserService = ref.watch(localUserServiceProvider);
   final notificationService = ref.watch(notificationServiceProvider);
-  return ReadingStreakService(localUserService, notificationService);
+  return ReadingStreakService(streakRepository, localUserService, notificationService);
 });
 
 /// Provider for current reading streak
 final currentReadingStreakProvider = FutureProvider<ReadingStreak>((ref) async {
   final streakService = ref.watch(readingStreakServiceProvider);
-  return await streakService.getCurrentStreak();
+  final authState = ref.watch(authStateProvider);
+  
+  return authState.when(
+    data: (user) async {
+      if (user == null) {
+        return ReadingStreak(
+          userId: '',
+          currentStreak: 0,
+          longestStreak: 0,
+          lastReflectionDate: DateTime.now(),
+          reflectionDates: [],
+        );
+      }
+      return await streakService.getCurrentStreak(user.uid);
+    },
+    loading: () => ReadingStreak(
+      userId: '',
+      currentStreak: 0,
+      longestStreak: 0,
+      lastReflectionDate: DateTime.now(),
+      reflectionDates: [],
+    ),
+    error: (_, __) => ReadingStreak(
+      userId: '',
+      currentStreak: 0,
+      longestStreak: 0,
+      lastReflectionDate: DateTime.now(),
+      reflectionDates: [],
+    ),
+  );
 });
 
 /// Provider for streak statistics
 final streakStatsProvider = FutureProvider<StreakStats>((ref) async {
   final streakService = ref.watch(readingStreakServiceProvider);
-  return await streakService.getStreakStats();
+  final authState = ref.watch(authStateProvider);
+  
+  return authState.when(
+    data: (user) async {
+      if (user == null) return StreakStats.empty();
+      return await streakService.getStreakStats(user.uid);
+    },
+    loading: () => StreakStats.empty(),
+    error: (_, __) => StreakStats.empty(),
+  );
 });
 
-/// Provider to check if user has read today
-final hasReadTodayProvider = FutureProvider<bool>((ref) async {
+/// Provider to check if user has reflected today
+final hasReflectedTodayProvider = FutureProvider<bool>((ref) async {
   final streakService = ref.watch(readingStreakServiceProvider);
-  return await streakService.hasReadToday();
+  final authState = ref.watch(authStateProvider);
+  
+  return authState.when(
+    data: (user) async {
+      if (user == null) return false;
+      return await streakService.hasReflectedToday(user.uid);
+    },
+    loading: () => false,
+    error: (_, __) => false,
+  );
 });
 
 /// State class for reading streak operations
@@ -80,18 +143,18 @@ class ReadingStreakNotifier extends StateNotifier<ReadingStreakState> {
   ReadingStreakNotifier(this._streakService) : super(const ReadingStreakState());
 
   /// Load current streak and stats
-  Future<void> loadCurrentStreak() async {
+  Future<void> loadCurrentStreak(String userId) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final streak = await _streakService.getCurrentStreak();
-      final stats = await _streakService.getStreakStats();
+      final streak = await _streakService.getCurrentStreak(userId);
+      final stats = await _streakService.getStreakStats(userId);
       
       state = state.copyWith(
         isLoading: false,
         currentStreak: streak,
         stats: stats,
-        hasReadToday: streak.hasReadToday,
+        hasReadToday: streak.hasReflectedToday,
       );
     } catch (e) {
       state = state.copyWith(
@@ -101,25 +164,25 @@ class ReadingStreakNotifier extends StateNotifier<ReadingStreakState> {
     }
   }
 
-  /// Mark today's devotional as read
-  Future<void> markAsRead([DateTime? date]) async {
+  /// Record reflection and update streak
+  Future<void> recordReflection(String userId, [DateTime? date]) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final readDate = date ?? DateTime.now();
-      final newStreak = await _streakService.markAsRead(readDate);
-      final stats = await _streakService.getStreakStats();
+      final reflectionDate = date ?? DateTime.now();
+      final newStreak = await _streakService.recordReflection(userId, reflectionDate);
+      final stats = await _streakService.getStreakStats(userId);
       
       state = state.copyWith(
         isLoading: false,
         currentStreak: newStreak,
         stats: stats,
-        hasReadToday: newStreak.hasReadToday,
+        hasReadToday: newStreak.hasReflectedToday,
       );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Erro ao marcar como lido: ${e.toString()}',
+        errorMessage: 'Erro ao registrar reflexão: ${e.toString()}',
       );
     }
   }
@@ -138,12 +201,12 @@ class ReadingStreakNotifier extends StateNotifier<ReadingStreakState> {
   }
 
   /// Reset streak (for testing)
-  Future<void> resetStreak() async {
+  Future<void> resetStreak(String userId) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      await _streakService.resetStreak();
-      await loadCurrentStreak();
+      await _streakService.resetStreak(userId);
+      await loadCurrentStreak(userId);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -153,8 +216,8 @@ class ReadingStreakNotifier extends StateNotifier<ReadingStreakState> {
   }
 
   /// Refresh streak data
-  Future<void> refreshStreak() async {
-    await loadCurrentStreak();
+  Future<void> refreshStreak(String userId) async {
+    await loadCurrentStreak(userId);
   }
 
   /// Clear error message
@@ -194,49 +257,51 @@ final totalDaysReadProvider = Provider<int>((ref) {
   return streakState.currentStreak?.totalDaysRead ?? 0;
 });
 
-/// Provider for streak milestone notification
-final streakMilestoneProvider = Provider<StreakMilestone?>((ref) {
+/// Provider for streak milestone check
+final streakMilestoneProvider = Provider<bool>((ref) {
   final streakState = ref.watch(readingStreakNotifierProvider);
-  return streakState.currentStreak?.getStreakMilestone();
+  final streakService = ref.watch(readingStreakServiceProvider);
+  final currentStreak = streakState.currentStreak?.currentStreak ?? 0;
+  return streakService.isStreakMilestone(currentStreak);
 });
 
 /// Provider for streak status message
 final streakStatusMessageProvider = Provider<String>((ref) {
   final streakState = ref.watch(readingStreakNotifierProvider);
-  final hasReadToday = streakState.hasReadToday;
+  final hasReflectedToday = streakState.hasReadToday;
   final currentStreak = streakState.currentStreak?.currentStreak ?? 0;
   final isActive = streakState.currentStreak?.isStreakActive ?? false;
 
-  if (hasReadToday) {
+  if (hasReflectedToday) {
     if (currentStreak == 1) {
-      return 'Parabéns! Você iniciou sua jornada 🎉';
+      return 'Parabéns! Você iniciou sua jornada de reflexões 🎉';
     } else {
-      return 'Devocional de hoje concluído! 🙏';
+      return 'Reflexão de hoje concluída! 🙏';
     }
   } else if (isActive && currentStreak > 0) {
-    return 'Continue sua sequência de $currentStreak dias 📖';
+    return 'Continue sua sequência de $currentStreak dias de reflexões 📖';
   } else {
-    return 'Que tal começar sua jornada hoje? ✨';
+    return 'Que tal começar sua jornada de reflexões hoje? ✨';
   }
 });
 
 /// Provider for streak encouragement message
 final streakEncouragementProvider = Provider<String>((ref) {
   final currentStreak = ref.watch(currentStreakNumberProvider);
-  final hasReadToday = ref.watch(readingStreakNotifierProvider).hasReadToday;
+  final hasReflectedToday = ref.watch(readingStreakNotifierProvider).hasReadToday;
   
-  if (hasReadToday) {
+  if (hasReflectedToday) {
     return 'Você está no controle! 💪';
   }
   
   if (currentStreak == 0) {
-    return 'Todo grande começo inicia com um primeiro passo 🌱';
+    return 'Todo grande começo inicia com uma primeira reflexão 🌱';
   } else if (currentStreak < 7) {
-    return 'Você está construindo um hábito fantástico! 🌟';
+    return 'Você está construindo um hábito fantástico de reflexão! 🌟';
   } else if (currentStreak < 30) {
-    return 'Sua disciplina é inspiradora! 🔥';
+    return 'Sua disciplina em refletir é inspiradora! 🔥';
   } else {
-    return 'Você é um exemplo de dedicação! 👑';
+    return 'Você é um exemplo de dedicação às reflexões! 👑';
   }
 });
 

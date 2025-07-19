@@ -141,25 +141,63 @@
     - Implement custom form field widgets with validation
     - _Requirements: 8.1, 8.5_
 
-- [ ] 11. Add comprehensive input validation
-  - [ ] 11.1 Create validation utilities
-    - Create Validators class for email, password, and name validation
+- [ ] 11. Implement reflection system for devotionals
+  - [ ] 11.1 Create reflection domain entities and repositories
+    - Create Reflection entity with id, devotionalId, userId, content, timestamps
+    - Define ReflectionRepository interface for CRUD operations
+    - Implement ReflectionLocalDataSource for local storage
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
+
+  - [ ] 11.2 Create reflection service and data persistence
+    - Implement ReflectionService with save, get, and update methods
+    - Add local storage using SharedPreferences or SQLite for reflections
+    - Create ReflectionRepositoryImpl with local data source integration
+    - _Requirements: 6.2, 6.3, 6.5_
+
+  - [ ] 11.3 Add reflection UI to devotional display
+    - Add text input field to devotional card for user reflections
+    - Implement save/edit functionality with loading states
+    - Display existing reflections when available
+    - _Requirements: 6.1, 6.4, 10.6_
+
+- [ ] 12. Implement reading streak system with animations
+  - [ ] 12.1 Create reading streak domain and data layer
+    - Create ReadingStreak entity with currentStreak, longestStreak, dates
+    - Define ReadingStreakRepository interface
+    - Implement ReadingStreakService with increment and reset logic
+    - _Requirements: 7.1, 7.3, 7.4_
+
+  - [ ] 12.2 Integrate streak tracking with reflection submission
+    - Connect reflection saving to streak increment logic
+    - Implement daily streak validation and reset for missed days
+    - Add streak milestone detection (7, 30, 100 days)
+    - _Requirements: 7.1, 7.3, 7.5_
+
+  - [ ] 12.3 Create streak display and celebration animations
+    - Add streak counter display to home screen
+    - Implement animated celebration when streak increases
+    - Create special milestone animations for achievement unlocks
+    - _Requirements: 7.2, 7.4, 7.5, 10.6_
+
+- [ ] 13. Update advertisement system for post-reflection display
+  - [ ] 13.1 Modify ad service for interstitial-only approach
+    - Remove banner ad functionality from AdService
+    - Focus on interstitial ads triggered after reflection submission
+    - Update ad loading and display logic
+    - _Requirements: 8.1, 8.3_
+
+  - [ ] 13.2 Integrate ads with reflection workflow
+    - Show interstitial ad after user submits reflection (free users only)
+    - Ensure ads don't interrupt devotional reading experience
+    - Add proper error handling for ad loading failures
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+
+- [ ] 14. Add comprehensive input validation
+  - [ ] 14.1 Create validation utilities
+    - Create Validators class for email, password, name, and reflection validation
     - Implement form validation with proper error messages
     - Add input sanitization and security measures
-    - _Requirements: 4.3, 7.2_
-
-- [-] 14. Create comprehensive test suite
-  - [ ] 14.1 Write unit tests for core logic
-    - Create unit tests for repositories with mocked data sources
-    - Write tests for ViewModels with mocked dependencies
-    - Add tests for services and utility functions
-    - _Requirements: 7.2, 7.4_
-
-  - [ ] 14.2 Write widget tests for UI components
-    - Create widget tests for all screens and custom widgets
-    - Test user interactions and state changes
-    - Add tests for form validation and error states
-    - _Requirements: 8.5, 7.4_
+    - _Requirements: 4.3, 9.2_
 
 - [ ] 15. Configure Firebase and build setup
   - [ ] 15.1 Set up Firebase configuration
@@ -174,16 +212,17 @@
     - Test release build with flutter build apk --release
     - _Requirements: 7.4_
 
-- [ ] 16. Final integration and testing
-  - [ ] 16.1 Integration testing
+- [ ] 16. Final integration and manual testing
+  - [ ] 16.1 Manual integration testing
     - Test complete authentication flow from login to home screen
     - Verify notification scheduling and handling works correctly
     - Test offline functionality with local JSON data
-    - _Requirements: 1.1, 2.3, 3.1, 4.1_
+    - Test reflection and streak system end-to-end
+    - _Requirements: 1.1, 2.3, 3.1, 4.1, 6.1, 7.1_
 
-  - [ ] 16.2 End-to-end testing and polish
+  - [ ] 16.2 Final polish and user experience testing
     - Test app startup flow with authentication check
-    - Verify premium/free user experience differences
-    - Test error scenarios and recovery mechanisms
+    - Verify premium/free user experience differences with new ad placement
+    - Test reflection submission and streak animations
     - Add final UI polish and accessibility improvements
-    - _Requirements: 4.1, 6.1, 8.4, 8.5_
+    - _Requirements: 4.1, 8.1, 8.4, 10.6_

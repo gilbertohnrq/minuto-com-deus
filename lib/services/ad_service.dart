@@ -31,6 +31,9 @@ class AdService {
       if (kDebugMode) {
         print('AdService: Mobile Ads SDK initialized successfully');
       }
+      
+      // Preload first interstitial ad
+      await loadInterstitialAd();
     } catch (e) {
       if (kDebugMode) {
         print('AdService: Failed to initialize Mobile Ads SDK: $e');
@@ -38,7 +41,7 @@ class AdService {
     }
   }
 
-  /// Load banner ad
+  /// Load banner ad (kept for backward compatibility but not actively used)
   Future<void> loadBannerAd() async {
     try {
       final completer = Completer<void>();
@@ -119,8 +122,10 @@ class AdService {
                 if (kDebugMode) {
                   print('AdService: Interstitial ad dismissed');
                 }
-                // Preload next interstitial ad
-                loadInterstitialAd();
+                // Preload next interstitial ad after a delay
+                Future.delayed(const Duration(seconds: 30), () {
+                  loadInterstitialAd();
+                });
               },
               onAdFailedToShowFullScreenContent: (ad, error) {
                 ad.dispose();

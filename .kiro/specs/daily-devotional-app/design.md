@@ -153,6 +153,55 @@ class User {
 }
 ```
 
+#### Reflection Entity
+```dart
+class Reflection {
+  final String id;
+  final String devotionalId;
+  final String userId;
+  final String content;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
+  
+  const Reflection({
+    required this.id,
+    required this.devotionalId,
+    required this.userId,
+    required this.content,
+    required this.createdAt,
+    this.updatedAt,
+  });
+}
+```
+
+#### ReadingStreak Entity
+```dart
+class ReadingStreak {
+  final String userId;
+  final int currentStreak;
+  final int longestStreak;
+  final DateTime lastReflectionDate;
+  final List<DateTime> reflectionDates;
+  
+  const ReadingStreak({
+    required this.userId,
+    required this.currentStreak,
+    required this.longestStreak,
+    required this.lastReflectionDate,
+    required this.reflectionDates,
+  });
+  
+  bool get isStreakActive {
+    final now = DateTime.now();
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
+    final lastDate = DateTime(lastReflectionDate.year, lastReflectionDate.month, lastReflectionDate.day);
+    
+    return lastDate.isAtSameMomentAs(DateTime(now.year, now.month, now.day)) ||
+           lastDate.isAtSameMomentAs(yesterday);
+  }
+}
+```
+
 #### NotificationSettings Entity
 ```dart
 class NotificationSettings {
@@ -201,6 +250,27 @@ abstract class UserRepository {
 }
 ```
 
+#### ReflectionRepository
+```dart
+abstract class ReflectionRepository {
+  Future<void> saveReflection(Reflection reflection);
+  Future<Reflection?> getReflection(String devotionalId, String userId);
+  Future<List<Reflection>> getUserReflections(String userId, {int? limit});
+  Future<void> updateReflection(Reflection reflection);
+  Future<void> deleteReflection(String reflectionId);
+}
+```
+
+#### ReadingStreakRepository
+```dart
+abstract class ReadingStreakRepository {
+  Future<ReadingStreak> getUserStreak(String userId);
+  Future<void> updateStreak(ReadingStreak streak);
+  Future<void> incrementStreak(String userId, DateTime reflectionDate);
+  Future<void> resetStreak(String userId);
+}
+```
+
 ### Services
 
 #### NotificationService
@@ -231,10 +301,30 @@ class AuthService {
 ```dart
 class AdService {
   Future<void> initialize();
-  Future<void> loadBannerAd();
+  Future<void> loadInterstitialAd();
   Future<void> showInterstitialAd();
-  void disposeBannerAd();
-  bool get isBannerAdLoaded;
+  void dispose();
+  bool get isInterstitialAdLoaded;
+}
+```
+
+#### ReflectionService
+```dart
+class ReflectionService {
+  Future<void> saveReflection(String devotionalId, String content);
+  Future<Reflection?> getReflection(String devotionalId);
+  Future<void> updateReflection(String reflectionId, String content);
+  Stream<List<Reflection>> getUserReflectionsStream();
+}
+```
+
+#### ReadingStreakService
+```dart
+class ReadingStreakService {
+  Future<ReadingStreak> getCurrentStreak();
+  Future<void> recordReflection(DateTime date);
+  Future<bool> checkStreakMilestone(int newStreak);
+  Stream<ReadingStreak> streakStream();
 }
 ```
 
@@ -245,21 +335,33 @@ class AdService {
 class HomeViewModel extends ChangeNotifier {
   final DevotionalRepository _devotionalRepository;
   final UserRepository _userRepository;
+  final ReflectionService _reflectionService;
+  final ReadingStreakService _streakService;
+  final AdService _adService;
   
   Devotional? _todayDevotional;
   User? _currentUser;
+  Reflection? _todayReflection;
+  ReadingStreak? _currentStreak;
   bool _isLoading = false;
+  bool _isSavingReflection = false;
   String? _errorMessage;
   
   // Getters
   Devotional? get todayDevotional => _todayDevotional;
   User? get currentUser => _currentUser;
+  Reflection? get todayReflection => _todayReflection;
+  ReadingStreak? get currentStreak => _currentStreak;
   bool get isLoading => _isLoading;
+  bool get isSavingReflection => _isSavingReflection;
   String? get errorMessage => _errorMessage;
   bool get shouldShowAds => _currentUser?.isPremium != true;
   
   // Methods
   Future<void> loadTodayDevotional();
+  Future<void> loadTodayReflection();
+  Future<void> loadCurrentStreak();
+  Future<void> saveReflection(String content);
   Future<void> refreshDevotional();
   void clearError();
 }

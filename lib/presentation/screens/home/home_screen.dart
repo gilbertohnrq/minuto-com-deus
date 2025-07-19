@@ -7,11 +7,12 @@ import '../../providers/local_user_provider.dart';
 import '../../providers/devotional_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/reading_streak_provider.dart';
+import '../../providers/reflection_provider.dart';
 import '../../widgets/common/banner_ad_widget.dart';
 import '../../widgets/common/error_widget.dart';
 import '../../widgets/common/loading_widget.dart';
 import '../../widgets/common/main_navigation.dart';
-import '../../widgets/devotional/devotional_card.dart';
+import '../../widgets/devotional/devotional_card_with_reflection.dart';
 import '../../widgets/streak/streak_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -34,7 +35,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
       
       // Initialize streak system
-      ref.read(readingStreakNotifierProvider.notifier).loadCurrentStreak();
+      final currentUser = ref.read(currentLocalUserProvider);
+      if (currentUser != null) {
+        ref.read(readingStreakNotifierProvider.notifier).loadCurrentStreak(currentUser.id);
+      }
       ref.read(initializeReadingRemindersProvider);
     });
   }
@@ -186,17 +190,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: todayDevotional.when(
                           data: (devotional) {
                             if (devotional != null) {
-                              // Mark as read when devotional is displayed
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                ref.read(readingStreakNotifierProvider.notifier).markAsRead();
-                              });
+                              // Get today's reflection for this devotional
+                              final todayReflection = ref.watch(todayReflectionProvider(devotional.id));
                               
-                              return DevotionalCard(
-                                devotional: devotional,
-                                onRefresh: () {
-                                  ref.invalidate(todayDevotionalProvider);
-                                  ref.read(readingStreakNotifierProvider.notifier).refreshStreak();
-                                },
+                              return todayReflection.when(
+                                data: (reflection) => DevotionalCardWithReflection(
+                                  devotional: devotional,
+                                  existingReflection: reflection,
+                                  onRefresh: () {
+                                    ref.invalidate(todayDevotionalProvider);
+                                    ref.invalidate(todayReflectionProvider(devotional.id));
+                                    final currentUser = ref.read(currentLocalUserProvider);
+                                    if (currentUser != null) {
+                                      ref.read(readingStreakNotifierProvider.notifier)
+                                          .refreshStreak(currentUser.id);
+                                    }
+                                  },
+                                ),
+                                loading: () => const LoadingWidget(
+                                  message: 'Carregando reflexão...',
+                                ),
+                                error: (_, __) => DevotionalCardWithReflection(
+                                  devotional: devotional,
+                                  existingReflection: null,
+                                  onRefresh: () {
+                                    ref.invalidate(todayDevotionalProvider);
+                                    ref.invalidate(todayReflectionProvider(devotional.id));
+                                    final currentUser = ref.read(currentLocalUserProvider);
+                                    if (currentUser != null) {
+                                      ref.read(readingStreakNotifierProvider.notifier)
+                                          .refreshStreak(currentUser.id);
+                                    }
+                                  },
+                                ),
                               );
                             } else {
                               return EmptyStateWidget(
@@ -235,8 +261,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
 
-                      // Banner ad for non-premium users
-                      const BannerAdWidget(),
+                      // Removed banner ad - now showing ads after reflection submission
 
                       // Footer with app info
                       Container(

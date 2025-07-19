@@ -65,16 +65,40 @@ This document outlines the requirements for a daily devotional mobile applicatio
 
 ### Requirement 6
 
-**User Story:** As a free user, I want to see advertisements in the app, so that I can access devotional content without paying while supporting the app's development.
+**User Story:** As a user, I want to add personal reflections to daily devotionals, so that I can deepen my spiritual practice and track my thoughts over time.
 
 #### Acceptance Criteria
 
-1. WHEN user has isPremium: false THEN the system SHALL display Google Mobile Ads
-2. WHEN showing ads THEN the system SHALL use banner ads or interstitial ads appropriately
-3. WHEN user has isPremium: true THEN the system SHALL hide all advertisements
-4. WHEN ad fails to load THEN the system SHALL handle gracefully without breaking app functionality
+1. WHEN viewing a devotional THEN the system SHALL display a text input field for personal reflections
+2. WHEN user adds a reflection THEN the system SHALL save it locally with the devotional date
+3. WHEN user submits a reflection THEN the system SHALL update their reading streak
+4. WHEN displaying a devotional with existing reflection THEN the system SHALL show the saved reflection text
+5. WHEN user edits an existing reflection THEN the system SHALL update the saved reflection
 
 ### Requirement 7
+
+**User Story:** As a user, I want to see my reading streak progress with engaging animations, so that I feel motivated to maintain daily devotional practice.
+
+#### Acceptance Criteria
+
+1. WHEN user adds their first reflection of the day THEN the system SHALL increment their reading streak by 1
+2. WHEN streak is updated THEN the system SHALL display an animated celebration showing the new streak count
+3. WHEN user misses a day THEN the system SHALL reset the streak to 0
+4. WHEN displaying home screen THEN the system SHALL show current streak count prominently
+5. WHEN user achieves milestone streaks (7, 30, 100 days) THEN the system SHALL show special celebration animations
+
+### Requirement 8
+
+**User Story:** As a free user, I want to see advertisements after engaging with content, so that I can access devotional content freely while supporting the app through meaningful ad interactions.
+
+#### Acceptance Criteria
+
+1. WHEN user has isPremium: false AND submits a reflection THEN the system SHALL display an interstitial ad
+2. WHEN user has isPremium: true THEN the system SHALL never show advertisements
+3. WHEN ad fails to load THEN the system SHALL handle gracefully without blocking user flow
+4. WHEN showing ads THEN the system SHALL ensure they don't interrupt the devotional reading experience
+
+### Requirement 9
 
 **User Story:** As a developer, I want the codebase to be well-organized and modular, so that the app is maintainable and can be easily extended with new features.
 
@@ -86,9 +110,9 @@ This document outlines the requirements for a daily devotional mobile applicatio
 4. WHEN building the app THEN the system SHALL successfully compile with flutter build apk --release
 5. WHEN implementing state management THEN the system SHALL use Provider pattern for consistent state handling
 
-### Requirement 8
+### Requirement 10
 
-**User Story:** As a user, I want the app to have a clean and accessible design, so that I can easily read and interact with devotional content.
+**User Story:** As a user, I want the app to have a clean and accessible design, so that I can easily read and interact with devotional content and reflection features.
 
 #### Acceptance Criteria
 
@@ -97,3 +121,4 @@ This document outlines the requirements for a daily devotional mobile applicatio
 3. WHEN creating layouts THEN the system SHALL ensure responsive design for different screen sizes
 4. WHEN displaying content THEN the system SHALL maintain proper contrast ratios for accessibility
 5. WHEN designing interactions THEN the system SHALL provide clear visual feedback for user actions
+6. WHEN displaying reflection input THEN the system SHALL provide intuitive and accessible text input experience

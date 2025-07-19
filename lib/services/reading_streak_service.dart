@@ -1,60 +1,54 @@
 import '../domain/entities/reading_streak.dart';
+import '../domain/repositories/reading_streak_repository.dart';
 import 'local_user_service.dart';
 import 'notification_service.dart';
 
 /// Service for managing reading streaks and daily reading tracking
 class ReadingStreakService {
+  final ReadingStreakRepository _streakRepository;
   final LocalUserService _localUserService;
   final NotificationService _notificationService;
   
-  ReadingStreakService(this._localUserService, this._notificationService);
+  ReadingStreakService(
+    this._streakRepository,
+    this._localUserService, 
+    this._notificationService,
+  );
   
-  /// Mark today's devotional as read and update streak
-  Future<ReadingStreak> markAsRead(DateTime date) async {
+  /// Record a reflection and update streak
+  Future<ReadingStreak> recordReflection(String userId, DateTime reflectionDate) async {
     try {
-      // Get current user
-      final currentUser = await _localUserService.getUser();
-      if (currentUser == null) {
-        throw Exception('User not found');
-      }
-      
-      // Update streak
-      final newStreak = currentUser.readingStreak.markAsRead(date);
-      
-      // Update user with new streak
-      final updatedUser = currentUser.copyWith(readingStreak: newStreak);
-      await _localUserService.updateUser(updatedUser);
+      // Increment streak based on reflection
+      final newStreak = await _streakRepository.incrementStreak(userId, reflectionDate);
       
       // Cancel today's reading reminder notifications
       await _cancelTodayReadingNotifications();
       
       // Check for milestone notification
-      final milestone = newStreak.getStreakMilestone();
-      if (milestone != null) {
-        await _scheduleMilestoneNotification(milestone);
+      if (_streakRepository.isStreakMilestone(newStreak.currentStreak)) {
+        await _scheduleMilestoneNotification(newStreak.currentStreak);
       }
       
       return newStreak;
     } catch (e) {
-      throw Exception('Failed to mark as read: $e');
+      throw Exception('Failed to record reflection: $e');
     }
   }
   
   /// Get current reading streak
-  Future<ReadingStreak> getCurrentStreak() async {
+  Future<ReadingStreak> getCurrentStreak(String userId) async {
     try {
-      final user = await _localUserService.getUser();
-      return user?.readingStreak ?? ReadingStreak.empty();
+      return await _streakRepository.getUserStreak(userId);
     } catch (e) {
       throw Exception('Failed to get current streak: $e');
     }
   }
   
-  /// Check if user has read today's devotional
-  Future<bool> hasReadToday() async {
+  /// Check if user has reflected today
+  Future<bool> hasReflectedToday(String userId) async {
     try {
-      final streak = await getCurrentStreak();
-      return streak.hasReadToday;
+      final streak = await getCurrentStreak(userId);
+      return streak.hasReflectedToday;
     } catch (e) {
       return false;
     }
@@ -68,8 +62,12 @@ class ReadingStreakService {
       // Cancel existing reading reminders
       await _cancelReadingReminders();
       
-      // Check if user has already read today
-      if (await hasReadToday()) {
+      // Get current user
+      final currentUser = await _localUserService.getUser();
+      if (currentUser == null) return;
+      
+      // Check if user has already reflected today
+      if (await hasReflectedToday(currentUser.id)) {
         return; // No need to schedule reminders
       }
       
@@ -119,12 +117,27 @@ class ReadingStreakService {
   }
   
   /// Schedule milestone achievement notification
-  Future<void> _scheduleMilestoneNotification(StreakMilestone milestone) async {
+  Future<void> _scheduleMilestoneNotification(int streakCount) async {
     try {
+      String message;
+      switch (streakCount) {
+        case 7:
+          message = 'Você completou 7 dias de reflexões! Continue assim! 🔥';
+          break;
+        case 30:
+          message = 'Incrível! 30 dias de reflexões diárias! Você é inspirador! ⭐';
+          break;
+        case 100:
+          message = 'Extraordinário! 100 dias de reflexões! Sua dedicação é admirável! 🏆';
+          break;
+        default:
+          message = 'Parabéns por manter sua sequência de reflexões! 🎉';
+      }
+      
       await _notificationService.scheduleImmediate(
         notificationId: 200, // Milestone notification ID
         title: 'Parabéns! 🎉',
-        body: milestone.message,
+        body: message,
       );
     } catch (e) {
       // Ignore milestone notification errors
@@ -132,9 +145,9 @@ class ReadingStreakService {
   }
   
   /// Get streak statistics
-  Future<StreakStats> getStreakStats() async {
+  Future<StreakStats> getStreakStats(String userId) async {
     try {
-      final streak = await getCurrentStreak();
+      final streak = await getCurrentStreak(userId);
       final user = await _localUserService.getUser();
       
       if (user == null) {
@@ -142,18 +155,28 @@ class ReadingStreakService {
       }
       
       final daysSinceCreation = DateTime.now().difference(user.createdAt).inDays + 1;
+      final totalDaysRead = streak.reflectionDates.length;
       final readingRate = daysSinceCreation > 0 
-          ? (streak.totalDaysRead / daysSinceCreation * 100).round()
+          ? (totalDaysRead / daysSinceCreation * 100).round()
           : 0;
+      
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final lastReflectionDay = DateTime(
+        streak.lastReflectionDate.year,
+        streak.lastReflectionDate.month,
+        streak.lastReflectionDate.day,
+      );
+      final daysSinceLastRead = today.difference(lastReflectionDay).inDays;
       
       return StreakStats(
         currentStreak: streak.currentStreak,
         longestStreak: streak.longestStreak,
-        totalDaysRead: streak.totalDaysRead,
+        totalDaysRead: totalDaysRead,
         readingRate: readingRate,
-        hasReadToday: streak.hasReadToday,
+        hasReadToday: streak.hasReflectedToday,
         isStreakActive: streak.isStreakActive,
-        daysSinceLastRead: streak.daysSinceLastRead,
+        daysSinceLastRead: daysSinceLastRead,
       );
     } catch (e) {
       return StreakStats.empty();
@@ -161,17 +184,22 @@ class ReadingStreakService {
   }
   
   /// Reset streak (for testing or user request)
-  Future<void> resetStreak() async {
+  Future<void> resetStreak(String userId) async {
     try {
-      final user = await _localUserService.getUser();
-      if (user == null) return;
-      
-      final resetStreak = ReadingStreak.empty();
-      final updatedUser = user.copyWith(readingStreak: resetStreak);
-      await _localUserService.updateUser(updatedUser);
+      await _streakRepository.resetStreak(userId);
     } catch (e) {
       throw Exception('Failed to reset streak: $e');
     }
+  }
+  
+  /// Check if streak milestone was reached
+  bool isStreakMilestone(int streak) {
+    return _streakRepository.isStreakMilestone(streak);
+  }
+  
+  /// Get available streak milestones
+  List<int> getStreakMilestones() {
+    return _streakRepository.getStreakMilestones();
   }
   
   // Helper methods for notification content
