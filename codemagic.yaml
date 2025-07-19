@@ -19,10 +19,10 @@ workflows:
     scripts:
       - name: Set up local.properties
         script: |
-          echo "flutter.sdk=$HOME/programs/flutter" > "$CM_BUILD_DIR/android/local.properties"
+          echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/android/local.properties"
       - name: Get Flutter packages
         script: |
-          flutter packages pub get
+          flutter pub get
       - name: Build APK with Flutter
         script: |
           flutter build apk --release
