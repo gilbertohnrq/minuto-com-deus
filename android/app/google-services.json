@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "733461658307",
+    "project_id": "nemideia-87363",
+    "storage_bucket": "nemideia-87363.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:733461658307:android:7bcbec2e0928eb28884076",
+        "android_client_info": {
+          "package_name": "com.devotional.daily_devotional_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1n0XLrZM-TVRiFEmBoznFMCyeMVV4qbs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
